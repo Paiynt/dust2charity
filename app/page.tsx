@@ -9,7 +9,13 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
 export default function Page() {
-  const FEE_BUFFER_SOL = isDevnet ? 0.001 : 0.002;
+  const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
+  const isDevnet =
+    rpcUrl.includes("devnet") ||
+    rpcUrl.includes("localhost") ||
+    rpcUrl.includes("testnet");
+    const FEE_BUFFER_SOL = 0.002;
+
 
 
   const { connection } = useConnection();
@@ -40,11 +46,9 @@ export default function Page() {
   const recipientDescription = selectedCharity.description;
   const OFFICIAL_VERIFY_URL = selectedCharity.verifyUrl;
 
-  const rpc = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
-  const isDevnet = rpc.includes("devnet") || rpc.includes("localhost") || rpc.includes("testnet");
   const explorerClusterParam = isDevnet ? "devnet" : "mainnet-beta";
-
   const recipientAddress = selectedCharity.mode === "direct" ? selectedCharity.address : "";
+
 
   function shortAddr(addr: string) {
     if (!addr) return "";
