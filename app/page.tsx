@@ -9,10 +9,12 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
 export default function Page() {
-  const FEE_BUFFER_SOL = 0.001;
+  const FEE_BUFFER_SOL = isDevnet ? 0.001 : 0.002;
+
 
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
+  const [ackMainnet, setAckMainnet] = useState(false);
 
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
@@ -86,6 +88,11 @@ export default function Page() {
       return;
     }
 
+    if (!isDevnet && !ackMainnet) {
+      setStatus("Please confirm the mainnet checkbox before sending.");
+      return;
+    }
+    
     if (!selectedCharity) {
       setStatus("No charity selected.");
       return;
@@ -154,6 +161,24 @@ export default function Page() {
   return (
     <main style={{ padding: 24 }}>
       <h1>Dust2Charity {isDevnet ? "(Devnet)" : "(Mainnet)"}</h1>
+      <div
+  style={{
+    marginTop: 12,
+    padding: 12,
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    background: isDevnet ? "#f5f5f5" : "#fff7e6"
+  }}
+>
+  {isDevnet ? (
+    <strong>Demo mode (Devnet):</strong>
+  ) : (
+    <strong>⚠️ Mainnet (REAL FUNDS):</strong>
+  )}{" "}
+  {isDevnet
+    ? "Transactions use Devnet SOL and have no real-world financial impact."
+    : "Transactions send real SOL and are irreversible. Verify the recipient before sending."}
+</div>
 
       <ClientOnly>
         <WalletMultiButton />
@@ -281,6 +306,17 @@ export default function Page() {
           <strong>Safety:</strong> This site never asks for private keys. You approve the donation inside your wallet.
         </p>
       </div>
+      {!isDevnet && (
+  <label style={{ display: "block", marginTop: 16 }}>
+    <input
+      type="checkbox"
+      checked={ackMainnet}
+      onChange={(e) => setAckMainnet(e.target.checked)}
+      style={{ marginRight: 8 }}
+    />
+    I understand this sends real funds on Solana mainnet and is irreversible.
+  </label>
+)}
 
       {/* Donate UI */}
       <div style={{ marginTop: 20 }}>
@@ -294,7 +330,7 @@ export default function Page() {
 
         <button
           onClick={donateMax}
-          disabled={selectedCharity.mode !== "direct"}
+          disabled={selectedCharity.mode !== "direct" || (!isDevnet && !ackMainnet)}
           style={{
             padding: 8,
             marginRight: 8,
@@ -307,7 +343,7 @@ export default function Page() {
 
         <button
           onClick={sendSol}
-          disabled={selectedCharity.mode !== "direct"}
+          disabled={selectedCharity.mode !== "direct" || (!isDevnet && !ackMainnet)}
           style={{
             padding: 8,
             opacity: selectedCharity.mode !== "direct" ? 0.5 : 1,
