@@ -1,6 +1,7 @@
 {
   "name": "dust2charity-solana",
   "private": true,
+  "workspaces": ["packages/*"],
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -18,7 +19,9 @@
     "clsx": "^2.1.1",
     "next": "^14.2.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "dust2charity-sdk": "file:packages/dust2charity-sdk"
+
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
@@ -31,4 +34,5 @@
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"
   }
+
 }
