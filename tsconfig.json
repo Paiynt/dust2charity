@@ -17,10 +17,6 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./*"]
-    },
     "types": [
       "node"
     ],
@@ -40,3 +36,4 @@
     "node_modules"
   ]
 }
+

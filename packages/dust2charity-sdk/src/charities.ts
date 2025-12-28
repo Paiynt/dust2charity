@@ -9,6 +9,14 @@ export type Charity = {
   // For trust/transparency
   verifyUrl: string;
 
+  sourceLabel: "Rainforest Foundation US crypto donation page",
+  verifiedAt: "2025-12-28",
+  notes: "Direct SOL transfer address published by the charity.",
+  
+  sourceLabel: "Save the Children donation page (The Giving Block)",
+verifiedAt: "2025-12-28",
+notes: "Donation handled via Giving Block; no direct on-chain recipient address shown in-app."
+
   // For direct transfers
   address?: string;
 

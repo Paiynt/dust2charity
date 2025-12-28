@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import ClientOnly from "../components/ClientOnly";
 // @ts-ignore
-import { CHARITIES } from "./lib/charities";
+import { CHARITIES, sendSolDonation, getSpendableSol } from "dust2charity-sdk";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+// @ts-ignore: dust2charity-sdk may not have types in all environments
+
 
 export default function Page() {
   const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
@@ -79,11 +81,13 @@ export default function Page() {
   }, [publicKey, connection]);
 
   function donateMax() {
-    if (!selectedCharity || selectedCharity.mode !== "direct") return;
+    if (selectedCharity.mode !== "direct") return;
     if (balance === null) return;
-    const max = Math.max(0, balance - FEE_BUFFER_SOL);
+  
+    const max = getSpendableSol(balance, FEE_BUFFER_SOL);
     setAmount(max.toFixed(6));
   }
+  
 
 
   async function sendSol() {
@@ -91,69 +95,36 @@ export default function Page() {
       setStatus("Wallet not connected");
       return;
     }
-
-    if (!isDevnet && !ackMainnet) {
-      setStatus("Please confirm the mainnet checkbox before sending.");
-      return;
-    }
-    
-    if (!selectedCharity) {
-      setStatus("No charity selected.");
-      return;
-    }
-
+  
     if (selectedCharity.mode !== "direct") {
       setStatus("This charity uses Giving Block. Please use the official donation link above.");
       return;
     }
-
+  
+    // (optional) mainnet checkbox guard here
+  
     try {
-      setStatus("Creating transaction...");
-
-      // amount validation
-      const amountNum = Number(amount);
-      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      setStatus("Preparing transaction...");
+  
+      const amt = Number(amount);
+      if (!Number.isFinite(amt) || amt <= 0) {
         setStatus("Enter a valid amount greater than 0");
         return;
       }
-
-      // fee-buffer validation
-      if (balance !== null && amountNum > Math.max(0, balance - FEE_BUFFER_SOL)) {
-        setStatus("Amount too high (fee buffer). Click Donate Max.");
-        return;
-      }
-
-      // recipient
-      let recipient: PublicKey;
-      try {
-        recipient = new PublicKey(selectedCharity.address);
-      } catch {
-        setStatus("Recipient address is invalid.");
-        return;
-      }
-
-      const lamports = Math.floor(amountNum * LAMPORTS_PER_SOL);
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: recipient,
-          lamports
-        })
-      );
-
-      // make tx more reliable
-      transaction.feePayer = publicKey;
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-
+  
       setStatus("Sending transaction...");
-      const signature = await sendTransaction(transaction, connection);
-
-      await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
-
+  
+      const { signature } = await sendSolDonation({
+        connection,
+        publicKey,
+        sendTransaction,
+        toAddress: selectedCharity.address,
+        amountSol: amt,
+        feeBufferSol: FEE_BUFFER_SOL
+      });
+  
       setStatus(`Success! Tx: ${signature}`);
-
-      // refresh balance
+  
       const newBalance = await connection.getBalance(publicKey);
       setBalance(newBalance / LAMPORTS_PER_SOL);
     } catch (err: any) {
@@ -161,6 +132,7 @@ export default function Page() {
       setStatus(err?.message ? `Transaction failed: ${err.message}` : "Transaction failed");
     }
   }
+  
 
   return (
     <main style={{ padding: 24 }}>
@@ -305,6 +277,14 @@ export default function Page() {
             official source page
           </a>
         </p>
+        <p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
+  Source: {selectedCharity.sourceLabel} · Verified: {selectedCharity.verifiedAt}
+</p>
+{selectedCharity.notes && (
+  <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.8 }}>
+    Note: {selectedCharity.notes}
+  </p>
+)}
 
         <p style={{ margin: "10px 0 0", fontSize: 13, opacity: 0.85 }}>
           <strong>Safety:</strong> This site never asks for private keys. You approve the donation inside your wallet.
