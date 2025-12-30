@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ClientOnly from "../components/ClientOnly";
 // @ts-ignore
-import { CHARITIES, donateSol, getSpendableSol } from "dust2charity-sdk";
+import { CHARITIES, donateSol, getSpendableSol, type CharityId } from "dust2charity-sdk";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -22,7 +22,8 @@ export default function Page() {
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState("");
-  const [selectedCharityId, setSelectedCharityId] = useState<"rfus" | "stc">("rfus");
+  const [selectedCharityId, setSelectedCharityId] = useState<CharityId>("rfus");
+
 
   const selectedCharity = useMemo(() => {
     const found = CHARITIES.find((c: any) => c.id === selectedCharityId);
