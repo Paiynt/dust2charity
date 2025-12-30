@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ClientOnly from "../components/ClientOnly";
 // @ts-ignore
-import { CHARITIES, sendSolDonation, getSpendableSol } from "dust2charity-sdk";
+import { CHARITIES, donateSol, getSpendableSol } from "dust2charity-sdk";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
@@ -113,17 +113,20 @@ export default function Page() {
       }
   
       setStatus("Sending transaction...");
-  
-      const { signature } = await sendSolDonation({
-        connection,
-        publicKey,
-        sendTransaction,
-        toAddress: selectedCharity.address,
-        amountSol: amt,
-        feeBufferSol: FEE_BUFFER_SOL
-      });
-  
-      setStatus(`Success! Tx: ${signature}`);
+
+const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
+const result = await donateSol({
+  connection,
+  wallet: { publicKey, sendTransaction },
+  charityId: selectedCharityId,
+  amountSol: Number(amount),
+  feeBufferSol: FEE_BUFFER_SOL,
+  rpcUrl
+});
+
+setStatus(`Success! Tx: ${result.explorerUrl}`);
+
+
   
       const newBalance = await connection.getBalance(publicKey);
       setBalance(newBalance / LAMPORTS_PER_SOL);
@@ -278,6 +281,14 @@ export default function Page() {
           </a>
         </p>
         <p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
+  Source: {selectedCharity.sourceLabel} · Verified: {selectedCharity.verifiedAt}
+</p>
+{selectedCharity.notes && (
+  <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.8 }}>
+    Note: {selectedCharity.notes}
+  </p>
+)}
+<p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
   Source: {selectedCharity.sourceLabel} · Verified: {selectedCharity.verifiedAt}
 </p>
 {selectedCharity.notes && (
