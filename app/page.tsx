@@ -24,27 +24,21 @@ export default function Page() {
   const [status, setStatus] = useState("");
   const [selectedCharityId, setSelectedCharityId] = useState<"rfus" | "stc">("rfus");
 
-  const selectedCharity = useMemo(
-    () => CHARITIES.find((c: any) => c.id === selectedCharityId),
-    [selectedCharityId]
-  );
-
-  if (!selectedCharity) {
-    return (
-      <main style={{ padding: 24 }}>
-        <h1>Dust2Charity</h1>
-        <p>Charity selection error. Please refresh.</p>
-        <p>selectedCharityId: {selectedCharityId}</p>
-      </main>
-    );
-  }
+  const selectedCharity = useMemo(() => {
+    const found = CHARITIES.find((c: any) => c.id === selectedCharityId);
+    // Fallback to first charity so TS never sees "undefined"
+    return found ?? CHARITIES[0];
+  }, [selectedCharityId]);
+  
 
   const recipientName = selectedCharity.name;
   const recipientDescription = selectedCharity.description;
   const OFFICIAL_VERIFY_URL = selectedCharity.verifyUrl;
 
   const explorerClusterParam = isDevnet ? "devnet" : "mainnet-beta";
-  const recipientAddress = selectedCharity.mode === "direct" ? selectedCharity.address : "";
+  const recipientAddress =
+  selectedCharity.mode === "direct" ? (selectedCharity.address ?? "") : "";
+
 
   function shortAddr(addr: string) {
     if (!addr) return "";
