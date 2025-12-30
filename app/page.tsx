@@ -6,19 +6,14 @@ import ClientOnly from "../components/ClientOnly";
 import { CHARITIES, donateSol, getSpendableSol } from "dust2charity-sdk";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-// @ts-ignore: dust2charity-sdk may not have types in all environments
-
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export default function Page() {
   const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
   const isDevnet =
-    rpcUrl.includes("devnet") ||
-    rpcUrl.includes("localhost") ||
-    rpcUrl.includes("testnet");
-    const FEE_BUFFER_SOL = 0.002;
+    rpcUrl.includes("devnet") || rpcUrl.includes("localhost") || rpcUrl.includes("testnet");
 
-
+  const FEE_BUFFER_SOL = 0.002;
 
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
@@ -30,7 +25,7 @@ export default function Page() {
   const [selectedCharityId, setSelectedCharityId] = useState<"rfus" | "stc">("rfus");
 
   const selectedCharity = useMemo(
-    () => CHARITIES.find((c) => c.id === selectedCharityId),
+    () => CHARITIES.find((c: any) => c.id === selectedCharityId),
     [selectedCharityId]
   );
 
@@ -50,7 +45,6 @@ export default function Page() {
 
   const explorerClusterParam = isDevnet ? "devnet" : "mainnet-beta";
   const recipientAddress = selectedCharity.mode === "direct" ? selectedCharity.address : "";
-
 
   function shortAddr(addr: string) {
     if (!addr) return "";
@@ -83,51 +77,49 @@ export default function Page() {
   function donateMax() {
     if (selectedCharity.mode !== "direct") return;
     if (balance === null) return;
-  
+
     const max = getSpendableSol(balance, FEE_BUFFER_SOL);
     setAmount(max.toFixed(6));
   }
-  
-
 
   async function sendSol() {
     if (!publicKey) {
       setStatus("Wallet not connected");
       return;
     }
-  
+
+    if (!isDevnet && !ackMainnet) {
+      setStatus("Please confirm the mainnet checkbox before sending real funds.");
+      return;
+    }
+
     if (selectedCharity.mode !== "direct") {
       setStatus("This charity uses Giving Block. Please use the official donation link above.");
       return;
     }
-  
-    // (optional) mainnet checkbox guard here
-  
+
     try {
       setStatus("Preparing transaction...");
-  
+
       const amt = Number(amount);
       if (!Number.isFinite(amt) || amt <= 0) {
         setStatus("Enter a valid amount greater than 0");
         return;
       }
-  
+
       setStatus("Sending transaction...");
 
-const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
-const result = await donateSol({
-  connection,
-  wallet: { publicKey, sendTransaction },
-  charityId: selectedCharityId,
-  amountSol: Number(amount),
-  feeBufferSol: FEE_BUFFER_SOL,
-  rpcUrl
-});
+      const result = await donateSol({
+        connection,
+        wallet: { publicKey, sendTransaction },
+        charityId: selectedCharityId,
+        amountSol: amt,
+        feeBufferSol: FEE_BUFFER_SOL,
+        rpcUrl
+      });
 
-setStatus(`Success! Tx: ${result.explorerUrl}`);
+      setStatus(`Success! Tx: ${result.explorerUrl}`);
 
-
-  
       const newBalance = await connection.getBalance(publicKey);
       setBalance(newBalance / LAMPORTS_PER_SOL);
     } catch (err: any) {
@@ -135,29 +127,25 @@ setStatus(`Success! Tx: ${result.explorerUrl}`);
       setStatus(err?.message ? `Transaction failed: ${err.message}` : "Transaction failed");
     }
   }
-  
 
   return (
     <main style={{ padding: 24 }}>
       <h1>Dust2Charity {isDevnet ? "(Devnet)" : "(Mainnet)"}</h1>
+
       <div
-  style={{
-    marginTop: 12,
-    padding: 12,
-    border: "1px solid #ddd",
-    borderRadius: 8,
-    background: isDevnet ? "#f5f5f5" : "#fff7e6"
-  }}
->
-  {isDevnet ? (
-    <strong>Demo mode (Devnet):</strong>
-  ) : (
-    <strong>⚠️ Mainnet (REAL FUNDS):</strong>
-  )}{" "}
-  {isDevnet
-    ? "Transactions use Devnet SOL and have no real-world financial impact."
-    : "Transactions send real SOL and are irreversible. Verify the recipient before sending."}
-</div>
+        style={{
+          marginTop: 12,
+          padding: 12,
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          background: isDevnet ? "#f5f5f5" : "#fff7e6"
+        }}
+      >
+        {isDevnet ? <strong>Demo mode (Devnet):</strong> : <strong>⚠️ Mainnet (REAL FUNDS):</strong>}{" "}
+        {isDevnet
+          ? "Transactions use Devnet SOL and have no real-world financial impact."
+          : "Transactions send real SOL and are irreversible. Verify the recipient before sending."}
+      </div>
 
       <ClientOnly>
         <WalletMultiButton />
@@ -187,7 +175,14 @@ setStatus(`Success! Tx: ${result.explorerUrl}`);
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                   <strong>{c.name}</strong>
-                  <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 12, border: "1px solid #ddd" }}>
+                  <span
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      border: "1px solid #ddd"
+                    }}
+                  >
                     {c.mode === "direct" ? "Direct SOL transfer" : "Donate via Giving Block"}
                   </span>
                 </div>
@@ -233,7 +228,10 @@ setStatus(`Success! Tx: ${result.explorerUrl}`);
             <strong>Address:</strong> <code>{shortAddr(recipientAddress)}</code>
             {recipientAddress && (
               <>
-                <button onClick={() => copyToClipboard(recipientAddress)} style={{ marginLeft: 8, padding: "4px 8px" }}>
+                <button
+                  onClick={() => copyToClipboard(recipientAddress)}
+                  style={{ marginLeft: 8, padding: "4px 8px" }}
+                >
                   Copy
                 </button>
                 <a
@@ -253,9 +251,10 @@ setStatus(`Success! Tx: ${result.explorerUrl}`);
         ) : (
           <div style={{ marginTop: 10 }}>
             <p style={{ margin: "8px 0", fontSize: 13 }}>
-              This charity uses The Giving Block donation flow. For safety and proper attribution, donate on the official page:
+              This charity uses The Giving Block donation flow. For safety and proper attribution, donate on the
+              official page:
             </p>
-            {"donationUrl" in selectedCharity && (
+            {"donationUrl" in selectedCharity && selectedCharity.donationUrl && (
               <a
                 href={selectedCharity.donationUrl}
                 target="_blank"
@@ -280,38 +279,33 @@ setStatus(`Success! Tx: ${result.explorerUrl}`);
             official source page
           </a>
         </p>
+
+        {/* ✅ SINGLE source/verified block (duplicate removed) */}
         <p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
-  Source: {selectedCharity.sourceLabel} · Verified: {selectedCharity.verifiedAt}
-</p>
-{selectedCharity.notes && (
-  <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.8 }}>
-    Note: {selectedCharity.notes}
-  </p>
-)}
-<p style={{ margin: "8px 0", fontSize: 12, opacity: 0.8 }}>
-  Source: {selectedCharity.sourceLabel} · Verified: {selectedCharity.verifiedAt}
-</p>
-{selectedCharity.notes && (
-  <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.8 }}>
-    Note: {selectedCharity.notes}
-  </p>
-)}
+          Source: {selectedCharity.sourceLabel} · Verified: {selectedCharity.verifiedAt}
+        </p>
+        {selectedCharity.notes && (
+          <p style={{ margin: "6px 0", fontSize: 12, opacity: 0.8 }}>
+            Note: {selectedCharity.notes}
+          </p>
+        )}
 
         <p style={{ margin: "10px 0 0", fontSize: 13, opacity: 0.85 }}>
           <strong>Safety:</strong> This site never asks for private keys. You approve the donation inside your wallet.
         </p>
       </div>
+
       {!isDevnet && (
-  <label style={{ display: "block", marginTop: 16 }}>
-    <input
-      type="checkbox"
-      checked={ackMainnet}
-      onChange={(e) => setAckMainnet(e.target.checked)}
-      style={{ marginRight: 8 }}
-    />
-    I understand this sends real funds on Solana mainnet and is irreversible.
-  </label>
-)}
+        <label style={{ display: "block", marginTop: 16 }}>
+          <input
+            type="checkbox"
+            checked={ackMainnet}
+            onChange={(e) => setAckMainnet(e.target.checked)}
+            style={{ marginRight: 8 }}
+          />
+          I understand this sends real funds on Solana mainnet and is irreversible.
+        </label>
+      )}
 
       {/* Donate UI */}
       <div style={{ marginTop: 20 }}>
