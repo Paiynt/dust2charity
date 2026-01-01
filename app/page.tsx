@@ -6,7 +6,9 @@ import ClientOnly from "../components/ClientOnly";
 import { CHARITIES, donateSol, donateUsdc, getSpendableSol, type CharityId } from "dust2charity-sdk";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+
+
 
 export default function Page() {
   const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || "";
