@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ClientOnly from "../components/ClientOnly";
 // @ts-ignore
-import { CHARITIES, donateSol, getSpendableSol, type CharityId } from "dust2charity-sdk";
+import { CHARITIES, donateSol, donateUsdc, getSpendableSol, type CharityId } from "dust2charity-sdk";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -20,6 +20,8 @@ export default function Page() {
   const [ackMainnet, setAckMainnet] = useState(false);
 
   const [balance, setBalance] = useState<number | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+const [asset, setAsset] = useState<"SOL" | "USDC">("SOL");
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState("");
   const [selectedCharityId, setSelectedCharityId] = useState<CharityId>("rfus");
@@ -68,14 +70,61 @@ export default function Page() {
     }
     fetchBalance();
   }, [publicKey, connection]);
-
+  useEffect(() => {
+    async function fetchUsdcBalance() {
+      if (!publicKey) {
+        setUsdcBalance(null);
+        return;
+      }
+      if (asset !== "USDC") return;
+  
+      try {
+        // We fetch via JSON-RPC token accounts by owner for the USDC mint.
+        // (Simple and reliable for MVP.)
+        const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+        const resp = await connection.getParsedTokenAccountsByOwner(publicKey, {
+          mint: new PublicKey(USDC_MINT)
+        });
+  
+        if (resp.value.length === 0) {
+          setUsdcBalance(0);
+          return;
+        }
+  
+        const uiAmount =
+          resp.value[0].account.data.parsed.info.tokenAmount.uiAmount ?? 0;
+  
+        setUsdcBalance(uiAmount);
+      } catch {
+        setUsdcBalance(null);
+      }
+    }
+  
+    fetchUsdcBalance();
+  }, [publicKey, connection, asset]);
+  
   function donateMax() {
     if (selectedCharity.mode !== "direct") return;
-    if (balance === null) return;
-
-    const max = getSpendableSol(balance, FEE_BUFFER_SOL);
-    setAmount(max.toFixed(6));
+  
+    if (asset === "SOL") {
+      if (balance === null) return;
+      const max = getSpendableSol(balance, FEE_BUFFER_SOL);
+      setAmount(max.toFixed(6));
+      return;
+    }
+  
+    // USDC donate max
+    if (usdcBalance === null) return;
+  
+    // We still need a little SOL to pay fees for the token transfer.
+    if (balance === null || balance < FEE_BUFFER_SOL) {
+      setStatus(`You need at least ~${FEE_BUFFER_SOL} SOL for network fees to send USDC.`);
+      return;
+    }
+  
+    setAmount(usdcBalance.toFixed(2));
   }
+  
 
   async function sendSol() {
     if (!publicKey) {
@@ -104,16 +153,29 @@ export default function Page() {
 
       setStatus("Sending transaction...");
 
-      const result = await donateSol({
-        connection,
-        wallet: { publicKey, sendTransaction },
-        charityId: selectedCharityId,
-        amountSol: amt,
-        feeBufferSol: FEE_BUFFER_SOL,
-        rpcUrl
-      });
+      let result;
 
-      setStatus(`Success! Tx: ${result.explorerUrl}`);
+if (asset === "SOL") {
+  result = await donateSol({
+    connection,
+    wallet: { publicKey, sendTransaction },
+    charityId: selectedCharityId,
+    amountSol: amt,
+    feeBufferSol: FEE_BUFFER_SOL,
+    rpcUrl
+  });
+} else {
+  result = await donateUsdc({
+    connection,
+    wallet: { publicKey, sendTransaction },
+    charityId: selectedCharityId,
+    amountUsdc: amt,
+    rpcUrl
+  });
+}
+
+setStatus(`Success! Tx: ${result.explorerUrl}`);
+
 
       const newBalance = await connection.getBalance(publicKey);
       setBalance(newBalance / LAMPORTS_PER_SOL);
@@ -188,12 +250,20 @@ export default function Page() {
         ))}
       </div>
 
-      {/* Balance display */}
-      {publicKey && balance !== null && (
-        <p style={{ marginTop: 12 }}>
-          <strong>Balance:</strong> {balance.toFixed(4)} SOL
-        </p>
-      )}
+      {publicKey && (
+  <p style={{ marginTop: 12 }}>
+    <strong>SOL Balance:</strong>{" "}
+    {balance !== null ? `${balance.toFixed(4)} SOL` : "—"}
+    {asset === "USDC" && (
+      <>
+        {"  "}·{"  "}
+        <strong>USDC Balance:</strong>{" "}
+        {usdcBalance !== null ? `${usdcBalance.toFixed(2)} USDC` : "—"}
+      </>
+    )}
+  </p>
+)}
+
 
       {/* Recipient box */}
       <div style={{ marginTop: 16, padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
@@ -301,6 +371,18 @@ export default function Page() {
           I understand this sends real funds on Solana mainnet and is irreversible.
         </label>
       )}
+<select
+  value={asset}
+  onChange={(e) => {
+    setAsset(e.target.value as "SOL" | "USDC");
+    setAmount("");
+    setStatus("");
+  }}
+  style={{ padding: 8, marginRight: 8 }}
+>
+  <option value="SOL">SOL</option>
+  <option value="USDC">USDC</option>
+</select>
 
       {/* Donate UI */}
       <div style={{ marginTop: 20 }}>
