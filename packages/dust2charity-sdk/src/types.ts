@@ -20,7 +20,8 @@ export type DonateSolResult = {
 };
 import type { CharityId, Charity } from "./charities";
 import type { Cluster } from "./explorer";
-import type { Connection, PublicKey } from "@solana/web3.js";
+import type { Connection, PublicKey, Transaction } from "@solana/web3.js";
+
 
 export type DonateUsdcArgs = {
   connection: Connection;
