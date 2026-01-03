@@ -49,3 +49,30 @@ Review checklist for wallet teams
 -Confirm on-chain address (direct mode) matches official source.
 -Confirm UI warns users that mainnet donations are irreversible.
 -Confirm donation flow never requests private keys.
+
+
+
+## V3: wallet-native transaction building
+
+Wallets can build a donation transaction without sending it:
+
+```ts
+import { buildDonationTx } from "dust2charity-sdk";
+
+const { tx, recipient } = await buildDonationTx({
+  connection,
+  fromPublicKey: publicKey,
+  charityId: "rfus",
+  asset: "USDC",
+  amount: 1.25
+});
+
+// Wallet sends using its normal flow:
+const sig = await sendTransaction(tx, connection);
+
+
+Recommended: wallet UI should show:
+
+-recipient.name
+-recipient.verifyUrl (link)
+-recipient.verifiedAt
