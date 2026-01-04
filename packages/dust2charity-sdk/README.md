@@ -50,6 +50,32 @@ console.log(result.signature);
 console.log(result.explorerUrl);
 ```
 
+## Build donation transaction (wallet-native)
+
+Wallets may prefer to build transactions without sending them immediately.
+
+```ts
+import { buildDonationTx } from "dust2charity-sdk";
+
+const { transaction, charity } = await buildDonationTx({
+  connection,
+  fromPublicKey: wallet.publicKey,
+  charityId: "rfus",
+  amountSol: 0.01,
+  rpcUrl
+});
+
+// Wallet fully controls signing and sending
+await wallet.sendTransaction(transaction, connection);
+
+This function:
+
+-Never signs
+-Never sends
+-Never accesses private keys
+-Returns a deterministic, auditable transaction
+
+
 ---
 
 ## Donate USDC (SPL token transfer)
@@ -80,3 +106,4 @@ console.log(result.explorerUrl);
 - All signing happens inside the user’s wallet via `sendTransaction`.
 - For charities with `mode: "givingblock"`, applications should link out to the official donation flow instead of sending on-chain.
 - Wallets and apps are encouraged to surface `verifyUrl`, `sourceLabel`, and `verifiedAt` to allow users to independently verify recipients.
+

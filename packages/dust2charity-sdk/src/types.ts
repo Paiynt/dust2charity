@@ -23,6 +23,7 @@ import type { Cluster } from "./explorer";
 import type { Connection, PublicKey, Transaction } from "@solana/web3.js";
 
 
+
 export type DonateUsdcArgs = {
   connection: Connection;
   wallet: {
@@ -43,3 +44,5 @@ export type DonateUsdcResult = {
   cluster: Cluster;
   explorerUrl: string;
 };
+
+export type { BuildDonationTxArgs, BuildDonationTxResult } from "./build";
