@@ -5,3 +5,5 @@ export * from "./sol";
 export * from "./usdc";
 export * from "./suggest";
 export * from "./build";
+export * from "./spl";
+export * from "./buildGeneric";

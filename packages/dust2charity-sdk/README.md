@@ -97,6 +97,51 @@ const result = await donateUsdc({
 console.log(result.signature);
 console.log(result.explorerUrl);
 ```
+---
+
+## Build donation transaction (generic SOL + SPL)
+
+Wallets can build a donation transaction for SOL or any SPL token mint without sending it.
+
+### Example: SOL
+```ts
+import { buildDonationTxGeneric } from "dust2charity-sdk";
+
+const { transaction } = await buildDonationTxGeneric({
+  connection,
+  fromPublicKey: publicKey,
+  charityId: "rfus",
+  asset: { kind: "SOL" },
+  amount: 0.01,
+  rpcUrl
+});
+
+await sendTransaction(transaction, connection);
+
+Example: Any SPL token (e.g. USDC):
+
+import { buildDonationTxGeneric } from "dust2charity-sdk";
+
+const { transaction } = await buildDonationTxGeneric({
+  connection,
+  fromPublicKey: publicKey,
+  charityId: "rfus",
+  asset: {
+    kind: "SPL",
+    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    symbol: "USDC",
+    minAmountUi: 0.01
+  },
+  amount: 1.25,
+  rpcUrl
+});
+
+await sendTransaction(transaction, connection);
+
+Notes:
+
+-For SPL tokens, the SDK fetches token decimals on-chain and transfers using checked instructions.
+-If the recipient associated token account (ATA) does not exist, it is created automatically (payer = sender).
 
 ---
 
