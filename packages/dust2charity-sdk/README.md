@@ -142,6 +142,25 @@ Notes:
 
 -For SPL tokens, the SDK fetches token decimals on-chain and transfers using checked instructions.
 -If the recipient associated token account (ATA) does not exist, it is created automatically (payer = sender).
+---
+
+## Resolve donation options (wallet UI helper)
+
+Wallet UIs often want “quick pick” donation buttons and eligibility logic.
+
+```ts
+import { resolveDonationOptions } from "dust2charity-sdk";
+
+const { charities, quickPicks } = resolveDonationOptions({
+  assets: [
+    { kind: "SOL", symbol: "SOL", balance: 0.034 },
+    { kind: "SPL", symbol: "USDC", mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", balance: 2.5 }
+  ],
+  solFeeBuffer: 0.002
+});
+
+// `charities` contains direct + givingblock (link-out) entries with verification metadata.
+// `quickPicks` contains suggested button amounts and max values per asset.
 
 ---
 
