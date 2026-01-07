@@ -13,10 +13,10 @@ The SDK provides:
 
 Each charity entry includes transparency fields intended to be shown to users:
 
-- `verifyUrl` — official page used for verification  
-- `sourceLabel` — short human-readable source description  
-- `verifiedAt` — date the source was last verified  
-- `notes` — optional context or limitations  
+- `verifyUrl` — official page used for verification
+- `sourceLabel` — short human-readable source description
+- `verifiedAt` — date the source was last verified
+- `notes` — optional context or limitations
 
 ```ts
 import { CHARITIES, getCharity } from "dust2charity-sdk";
@@ -50,6 +50,8 @@ console.log(result.signature);
 console.log(result.explorerUrl);
 ```
 
+---
+
 ## Build donation transaction (wallet-native)
 
 Wallets may prefer to build transactions without sending them immediately.
@@ -57,7 +59,7 @@ Wallets may prefer to build transactions without sending them immediately.
 ```ts
 import { buildDonationTx } from "dust2charity-sdk";
 
-const { transaction, charity } = await buildDonationTx({
+const { transaction } = await buildDonationTx({
   connection,
   fromPublicKey: wallet.publicKey,
   charityId: "rfus",
@@ -65,16 +67,14 @@ const { transaction, charity } = await buildDonationTx({
   rpcUrl
 });
 
-// Wallet fully controls signing and sending
 await wallet.sendTransaction(transaction, connection);
+```
 
 This function:
-
--Never signs
--Never sends
--Never accesses private keys
--Returns a deterministic, auditable transaction
-
+- Never signs
+- Never sends
+- Never accesses private keys
+- Returns a deterministic, auditable transaction
 
 ---
 
@@ -97,6 +97,7 @@ const result = await donateUsdc({
 console.log(result.signature);
 console.log(result.explorerUrl);
 ```
+
 ---
 
 ## Build donation transaction (generic SOL + SPL)
@@ -104,6 +105,7 @@ console.log(result.explorerUrl);
 Wallets can build a donation transaction for SOL or any SPL token mint without sending it.
 
 ### Example: SOL
+
 ```ts
 import { buildDonationTxGeneric } from "dust2charity-sdk";
 
@@ -117,9 +119,11 @@ const { transaction } = await buildDonationTxGeneric({
 });
 
 await sendTransaction(transaction, connection);
+```
 
-Example: Any SPL token (e.g. USDC):
+### Example: Any SPL token (e.g. USDC)
 
+```ts
 import { buildDonationTxGeneric } from "dust2charity-sdk";
 
 const { transaction } = await buildDonationTxGeneric({
@@ -137,11 +141,12 @@ const { transaction } = await buildDonationTxGeneric({
 });
 
 await sendTransaction(transaction, connection);
+```
 
 Notes:
+- For SPL tokens, the SDK fetches token decimals on-chain and uses checked transfer instructions.
+- If the recipient associated token account (ATA) does not exist, it is created automatically (payer = sender).
 
--For SPL tokens, the SDK fetches token decimals on-chain and transfers using checked instructions.
--If the recipient associated token account (ATA) does not exist, it is created automatically (payer = sender).
 ---
 
 ## Resolve donation options (wallet UI helper)
@@ -154,17 +159,18 @@ import { resolveDonationOptions } from "dust2charity-sdk";
 const { charities, quickPicks } = resolveDonationOptions({
   assets: [
     { kind: "SOL", symbol: "SOL", balance: 0.034 },
-    { kind: "SPL", symbol: "USDC", mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", balance: 2.5 }
+    {
+      kind: "SPL",
+      symbol: "USDC",
+      mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      balance: 2.5
+    }
   ],
   solFeeBuffer: 0.002
 });
-
-// `charities` contains direct + givingblock (link-out) entries with verification metadata.
-// `quickPicks` contains suggested button amounts and max values per asset.
-
+```
 
 ---
-
 
 ## Plan donation flow (wallet-ready abstraction)
 
@@ -187,12 +193,12 @@ if (plan.kind === "onchain") {
 } else {
   window.open(plan.donationUrl, "_blank");
 }
+```
 
 This allows wallets to:
-
--avoid charity-specific logic
--support both on-chain and link-out donations
--keep full control over signing and UX
+- Avoid charity-specific logic
+- Support both on-chain and link-out donations
+- Keep full control over signing and UX
 
 ---
 
@@ -201,5 +207,4 @@ This allows wallets to:
 - This SDK never accesses private keys.
 - All signing happens inside the user’s wallet via `sendTransaction`.
 - For charities with `mode: "givingblock"`, applications should link out to the official donation flow instead of sending on-chain.
-- Wallets and apps are encouraged to surface `verifyUrl`, `sourceLabel`, and `verifiedAt` to allow users to independently verify recipients.
-
+- Wallets and apps are encouraged to surface `verifyUrl`, `sourceLabel`, and `verifiedAt` so users can independently verify recipients.
