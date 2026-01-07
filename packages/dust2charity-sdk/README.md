@@ -162,6 +162,38 @@ const { charities, quickPicks } = resolveDonationOptions({
 // `charities` contains direct + givingblock (link-out) entries with verification metadata.
 // `quickPicks` contains suggested button amounts and max values per asset.
 
+
+---
+
+
+## Plan donation flow (wallet-ready abstraction)
+
+Wallets can resolve the entire donation flow with a single call.
+
+```ts
+import { planDonationFlow } from "dust2charity-sdk";
+
+const plan = await planDonationFlow({
+  connection,
+  fromPublicKey: publicKey,
+  charityId: "rfus",
+  asset: { kind: "SPL", mint: USDC_MINT, symbol: "USDC" },
+  amount: 1.25,
+  rpcUrl
+});
+
+if (plan.kind === "onchain") {
+  await sendTransaction(plan.transaction, connection);
+} else {
+  window.open(plan.donationUrl, "_blank");
+}
+
+This allows wallets to:
+
+-avoid charity-specific logic
+-support both on-chain and link-out donations
+-keep full control over signing and UX
+
 ---
 
 ## Notes for wallet integrators
